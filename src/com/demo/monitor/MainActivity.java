@@ -26,23 +26,24 @@ import android.widget.ProgressBar;
  */
 public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
+    private final static String    TAG              = "HIK";
+
     private ImageView              mPlay;
     private ProgressBar            mBar;
-    private SurfaceView            mSurfaceView           = null;
-    private int                    m_iPort                = -1;            // playPort
-    private int                    m_iLogID               = -1;            // return by
-                                                                           // NET_DVR_Login_v30
-    private NET_DVR_DEVICEINFO_V30 m_oNetDvrDeviceInfoV30 = null;
-    private int                    m_iPlayID              = -1;            // return by
-                                                                           // NET_DVR_RealPlay_V30
-    private int                    m_iPlaybackID          = -1;            // return by
-                                                                           // NET_DVR_PlayBackByTime
+    private SurfaceView            mSurfaceView     = null;
+    private int                    hikPort          = -1;            // playPort
+    private int                    hikLoginId       = -1;
+    private NET_DVR_DEVICEINFO_V30 hikDeviceInfo = null;
+    private int                    hikPlayID        = -1;            // return by
+                                                                     // NET_DVR_RealPlay_V30
+    private int                    hikPlaybackID    = -1;            // return by
+                                                                     // NET_DVR_PlayBackByTime
 
 
-    private String                 strIP                  = "60.12.79.165";
-    private int                    nPort                  = 8000;
-    private String                 strUser                = "admin";
-    private String                 strPsd                 = "1q2w3e4r";
+    private String                 strIP            = "60.12.79.165";
+    private int                    nPort            = 8000;
+    private String                 strUser          = "admin";
+    private String                 strPsd           = "1q2w3e4r";
 
 
     @Override
@@ -83,13 +84,13 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         mSurfaceView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
-        Log.i("sur", "surface is created" + m_iPort);
-        if (-1 == m_iPort) {
+        Log.i("sur", "surface is created" + hikPort);
+        if (-1 == hikPort) {
             return;
         }
         Surface surface = holder.getSurface();
         if (surface.isValid()) {
-            if (!Player.getInstance().setVideoWindow(m_iPort, 0, holder)) {
+            if (!Player.getInstance().setVideoWindow(hikPort, 0, holder)) {
                 Log.e("sur", "Player setVideoWindow failed!");
             }
         }
@@ -102,12 +103,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        Log.i("sur", "Player setVideoWindow release!" + m_iPort);
-        if (-1 == m_iPort) {
+        Log.i("sur", "Player setVideoWindow release!" + hikPort);
+        if (-1 == hikPort) {
             return;
         }
         if (holder.getSurface().isValid()) {
-            if (!Player.getInstance().setVideoWindow(m_iPort, 0, null)) {
+            if (!Player.getInstance().setVideoWindow(hikPort, 0, null)) {
                 Log.e("sur", "Player setVideoWindow failed!");
             }
         }
@@ -122,10 +123,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             publishProgress();// 手动调用onProgressUpdate方法，传入进度值
             // 登录设备操作
             try {
-                if (m_iLogID < 0) {
+                if (hikLoginId < 0) {
                     // login on the device
-                    m_iLogID = loginDevice();
-                    if (m_iLogID < 0) {
+                    hikLoginId = loginDevice();
+                    if (hikLoginId < 0) {
                         Log.e("login", "This device logins failed!");
                         return null;
                     }
@@ -145,12 +146,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                             "Login sucess ****************************1***************************");
                     Thread.sleep(3000);
                 } else {
-                    // whether we have logout
-                    if (!HCNetSDK.getInstance().NET_DVR_Logout_V30(m_iLogID)) {
+                    if (!HCNetSDK.getInstance().NET_DVR_Logout_V30(hikLoginId)) {
                         Log.e("login", " NET_DVR_Logout is failed!");
                         return null;
                     }
-                    m_iLogID = -1;
+                    hikLoginId = -1;
                 }
             } catch (Exception err) {
                 Log.e("login", "error: " + err.toString());
@@ -172,7 +172,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         protected void onPostExecute(Void aVoid) {
             Log.e("sync", "onPostExecute");
             mBar.setVisibility(View.GONE);
-            if (m_iLogID < 0) {
+            if (hikLoginId < 0) {
                 Log.e("login", "please login on device first");
                 return;
             } else {
@@ -206,13 +206,13 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     // public void run() {
     // holder = mSurfaceView.getHolder();
     // holder.setFormat(PixelFormat.TRANSLUCENT);//半透明
-    // if (-1 == m_iPort)
+    // if (-1 == hikPort)
     // {
     // return;
     // }
     // Surface surface = holder.getSurface();
     // if (surface.isValid()) {
-    // if (!Player.getInstance().setVideoWindow(m_iPort, 0, holder)) {
+    // if (!Player.getInstance().setVideoWindow(hikPort, 0, holder)) {
     // Log.e("sur", "Player setVideoWindow failed!");
     // }
     // }
@@ -233,39 +233,43 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
     private int loginDevice() {
         // get instance
-        m_oNetDvrDeviceInfoV30 = new NET_DVR_DEVICEINFO_V30();
-        if (null == m_oNetDvrDeviceInfoV30) {
+        hikDeviceInfo = new NET_DVR_DEVICEINFO_V30();
+        if (null == hikDeviceInfo) {
             Log.e("login", "HKNetDvrDeviceInfoV30 new is failed!");
             return -1;
         }
 
         // call NET_DVR_Login_v30 to login on, port 8000 as default
-        int iLogID = HCNetSDK.getInstance().NET_DVR_Login_V30(strIP, nPort, strUser, strPsd,
-                m_oNetDvrDeviceInfoV30);
-        if (iLogID < 0) {
-            Log.e("login",
-                    "NET_DVR_Login is failed!Err:" + HCNetSDK.getInstance().NET_DVR_GetLastError());
+        int loginId = HCNetSDK.getInstance().NET_DVR_Login_V30(strIP, nPort, strUser, strPsd,
+            hikDeviceInfo);
+        if (loginId < 0) {
+            Log.e("login", HikVisionError.errorMsg(HCNetSDK.getInstance().NET_DVR_GetLastError()));
             return -1;
         }
-        // if(m_oNetDvrDeviceInfoV30.byChanNum > 0)
+        // if(hikDeviceInfo.byChanNum > 0)
         // {
-        // m_iStartChan = m_oNetDvrDeviceInfoV30.byStartChan;
-        // m_iChanNum = m_oNetDvrDeviceInfoV30.byChanNum;
+        // m_iStartChan = hikDeviceInfo.byStartChan;
+        // m_iChanNum = hikDeviceInfo.byChanNum;
         // }
-        // else if(m_oNetDvrDeviceInfoV30.byIPChanNum > 0)
+        // else if(hikDeviceInfo.byIPChanNum > 0)
         // {
-        // m_iStartChan = m_oNetDvrDeviceInfoV30.byStartDChan;
-        // m_iChanNum = m_oNetDvrDeviceInfoV30.byIPChanNum + m_oNetDvrDeviceInfoV30.byHighDChanNum *
+        // m_iStartChan = hikDeviceInfo.byStartDChan;
+        // m_iChanNum = hikDeviceInfo.byIPChanNum + hikDeviceInfo.byHighDChanNum *
         // 256;
         // }
         Log.i("login", "NET_DVR_Login is Successful!");
+        Log.i("login", "下面是设备信息************************");
+        Log.i("login", "通道开始=" + hikDeviceInfo.byStartChan);
+        Log.i("login", "通道个数=" + hikDeviceInfo.byChanNum);
+        Log.i("login", "设备类型=" + hikDeviceInfo.byDVRType);
+        Log.i("login", "ip通道个数=" + hikDeviceInfo.byIPChanNum);
 
-        return iLogID;
+        return loginId;
     }
 
 
     private void startSinglePreview() {
-        // if(m_iPlaybackID >= 0)
+        // if(hikPlaybackID >= 0)
         // {
         // Log.i("play", "Please stop palyback first");
         // return ;
@@ -282,11 +286,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         previewInfo.dwStreamType = 1; // substream
         previewInfo.bBlocked = 1;
         // HCNetSDK start preview
-        m_iPlayID = HCNetSDK.getInstance().NET_DVR_RealPlay_V40(m_iLogID, previewInfo,
+        hikPlayID = HCNetSDK.getInstance().NET_DVR_RealPlay_V40(hikLoginId, previewInfo,
                 fRealDataCallBack);
-        if (m_iPlayID < 0) {
-            Log.e("play", "NET_DVR_RealPlay is failed!Err:"
-                    + HCNetSDK.getInstance().NET_DVR_GetLastError());
+        if (hikPlayID < 0) {
+            Log.e("play", HikVisionError.errorMsg(HCNetSDK.getInstance().NET_DVR_GetLastError()));
             return;
         }
 
@@ -320,47 +323,46 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             int iStreamMode) {
 
         if (HCNetSDK.NET_DVR_SYSHEAD == iDataType) {
-            if (m_iPort >= 0) {
+            if (hikPort >= 0) {
                 return;
             }
-            m_iPort = Player.getInstance().getPort();
-            if (m_iPort == -1) {
-                Log.e("play",
-                        "getPort is failed with: " + Player.getInstance().getLastError(m_iPort));
+            hikPort = Player.getInstance().getPort();
+            if (hikPort == -1) {
+                Log.e("play", HikVisionError.errorMsg(Player.getInstance().getLastError(hikPort)));
                 return;
             }
-            Log.i("play", "getPort succ with: " + m_iPort);
+            Log.i("play", "getPort succ with: " + hikPort);
             if (iDataSize > 0) {
-                if (!Player.getInstance().setStreamOpenMode(m_iPort, iStreamMode)) // set stream
+                if (!Player.getInstance().setStreamOpenMode(hikPort, iStreamMode)) // set stream
                                                                                    // mode
                 {
                     Log.e("play", "setStreamOpenMode failed");
                     return;
                 }
-                if (!Player.getInstance().openStream(m_iPort, pDataBuffer, iDataSize,
+                if (!Player.getInstance().openStream(hikPort, pDataBuffer, iDataSize,
                         2 * 1024 * 1024)) // open stream
                 {
                     Log.e("play", "openStream failed");
                     return;
                 }
-                if (!Player.getInstance().play(m_iPort, mSurfaceView.getHolder())) {
+                if (!Player.getInstance().play(hikPort, mSurfaceView.getHolder())) {
                     Log.e("play", "play failed");
                     return;
                 }
-                if (!Player.getInstance().playSound(m_iPort)) {
-                    Log.e("play", "playSound failed with error code:"
-                            + Player.getInstance().getLastError(m_iPort));
+                if (!Player.getInstance().playSound(hikPort)) {
+                    Log.e("play",
+                            HikVisionError.errorMsg(Player.getInstance().getLastError(hikPort)));
                     return;
                 }
             }
         } else {
-            if (!Player.getInstance().inputData(m_iPort, pDataBuffer, iDataSize)) {
+            if (!Player.getInstance().inputData(hikPort, pDataBuffer, iDataSize)) {
                 // Log.e(TAG, "inputData failed with: " +
-                // Player.getInstance().getLastError(m_iPort));
+                // Player.getInstance().getLastError(hikPort));
                 for (int i = 0; i < 4000; i++) {
-                    if (!Player.getInstance().inputData(m_iPort, pDataBuffer, iDataSize))
-                        Log.e("play", "inputData failed with: "
-                                + Player.getInstance().getLastError(m_iPort));
+                    if (!Player.getInstance().inputData(hikPort, pDataBuffer, iDataSize))
+                        Log.e("play", HikVisionError
+                                .errorMsg(Player.getInstance().getLastError(hikPort)));
                     else
                         break;
                     try {
@@ -368,7 +370,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                     } catch (InterruptedException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
-
                     }
                 }
             }
